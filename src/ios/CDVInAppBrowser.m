@@ -70,11 +70,11 @@
 
 - (BOOL) isSystemUrl:(NSURL*)url
 {
-	if ([[url host] isEqualToString:@"itunes.apple.com"]) {
-		return YES;
-	}
+    if ([[url host] isEqualToString:@"itunes.apple.com"]) {
+        return YES;
+    }
 
-	return NO;
+    return NO;
 }
 
 - (void)open:(CDVInvokedUrlCommand*)command
@@ -153,6 +153,9 @@
     if (browserOptions.closebuttoncaption != nil) {
         [self.inAppBrowserViewController setCloseButtonTitle:browserOptions.closebuttoncaption];
     }
+    
+    [self.inAppBrowserViewController enableOpenInSafariButton:browserOptions.openinsafari];
+    
     // Set Presentation Style
     UIModalPresentationStyle presentationStyle = UIModalPresentationFullScreen; // default
     if (browserOptions.presentationstyle != nil) {
@@ -511,7 +514,7 @@
 
     self.closeButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(close)];
     self.closeButton.enabled = YES;
-
+    
     UIBarButtonItem* flexibleSpaceButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
 
     UIBarButtonItem* fixedSpaceButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
@@ -574,8 +577,21 @@
     self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
     self.backButton.enabled = YES;
     self.backButton.imageInsets = UIEdgeInsetsZero;
+    
+    // open in safari icon
+    UIImage *openInSafariIcon = [UIImage imageNamed:@"icon-openinsafari"];
+    CGSize size = CGSizeMake(TOOLBAR_HEIGHT - 8.0, TOOLBAR_HEIGHT - 8.0);
+    UIGraphicsBeginImageContext(size);
+    [openInSafariIcon drawInRect:CGRectMake(0, 0, size.width, size.height)];
+    UIImage *scaledOpenInSafariIcon = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    self.openInSafariButton = [[UIBarButtonItem alloc] initWithImage:scaledOpenInSafariIcon style:UIBarButtonItemStyleBordered target:self action:@selector(openInSafari)];
+    self.openInSafariButton.enabled = YES;
+    
+    UIBarButtonItem* openInSafariFixedSpaceButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+    fixedSpaceButton.width = 10;
 
-    [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
+    [self.toolbar setItems:@[self.closeButton, openInSafariFixedSpaceButton, self.openInSafariButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
 
     self.view.backgroundColor = [UIColor grayColor];
     [self.view addSubview:self.toolbar];
@@ -712,6 +728,26 @@
             [self setWebViewFrame:self.view.bounds];
         }
     }
+}
+
+- (void)enableOpenInSafariButton:(BOOL)enable
+{
+    NSMutableArray* items = [self.toolbar.items mutableCopy];
+    NSUInteger safariButtonIndex = [items indexOfObject:self.openInSafariButton];
+    NSUInteger closeButtonIndex = [items indexOfObject:self.closeButton];
+
+    if (enable && NSNotFound == safariButtonIndex) {
+        [items insertObject:self.openInSafariButton atIndex:closeButtonIndex + 1];
+    } else if (!enable && NSNotFound != safariButtonIndex) {
+        [items removeObject:self.openInSafariButton];
+    }
+    
+    [self.toolbar setItems:items];
+}
+
+- (void)openInSafari
+{
+    [[UIApplication sharedApplication] openURL:[self currentURL]];
 }
 
 - (void)viewDidLoad
@@ -997,4 +1033,3 @@
 
 
 @end
-
